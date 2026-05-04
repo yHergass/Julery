@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>חנות תכשיטים</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  direction: rtl;
+  background: #f5f5f5;
+}
+
+header {
+  background: #111;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cart-btn {
+  cursor: pointer;
+  background: #fff;
+  color: #111;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.categories {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background: white;
+}
+
+.categories button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.categories button.active {
+  background: black;
+  color: white;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: scale(1.03);
+}
+
+.card img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.card-content {
+  padding: 10px;
+}
+
+.price {
+  color: green;
+  font-weight: bold;
+}
+
+/* MODAL */
+.modal {
+  position: fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background: rgba(0,0,0,0.6);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content {
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  max-width:400px;
+  width:90%;
+}
+
+.modal img {
+  width:100%;
+  border-radius:10px;
+}
+
+.add-btn {
+  margin-top:10px;
+  padding:10px;
+  width:100%;
+  background:black;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+
+/* CART */
+.cart {
+  position: fixed;
+  right:0;
+  top:0;
+  width:300px;
+  height:100%;
+  background:white;
+  box-shadow:-2px 0 10px rgba(0,0,0,0.2);
+  padding:15px;
+  display:none;
+  overflow:auto;
+}
+
+.cart-item {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>קטלוג תכשיטים</div>
+  <div class="cart-btn" onclick="toggleCart()">🛒 סל (<span id="cart-count">0</span>)</div>
+</header>
+
+<div class="categories">
+  <button onclick="loadCategory('necklace', this)">שרשראות</button>
+  <button onclick="loadCategory('bracelet', this)">צמידים</button>
+  <button onclick="loadCategory('watch', this)">שעונים</button>
+  <button onclick="loadCategory('earrings', this)">עגילים</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- MODAL -->
+<div class="modal" id="modal" onclick="closeModal(event)">
+  <div class="modal-content" id="modal-content"></div>
+</div>
+
+<!-- CART -->
+<div class="cart" id="cart"></div>
+
+<script>
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+function saveCart() {
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCart();
+}
+
+function updateCart() {
+  document.getElementById("cart-count").innerText = cart.length;
+  const cartDiv = document.getElementById("cart");
+  cartDiv.innerHTML = "<h3>סל קניות</h3>";
+
+  cart.forEach((item, index) => {
+    cartDiv.innerHTML += `
+      <div class="cart-item">
+        <span>${item.name}</span>
+        <span>₪${item.price}</span>
+      </div>
+    `;
+  });
+}
+
+function toggleCart() {
+  const cartDiv = document.getElementById("cart");
+  cartDiv.style.display = cartDiv.style.display === "block" ? "none" : "block";
+}
+
+function randomPrice() {
+  return Math.floor(Math.random() * 400) + 100;
+}
+
+function loadCategory(category, btn) {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  const count = Math.floor(Math.random() * 4) + 5;
+
+  for (let i = 0; i < count; i++) {
+    const price = randomPrice();
+    const img = `https://source.unsplash.com/400x400/?${category},jewelry&sig=${Math.random()}`;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <img src="${img}">
+      <div class="card-content">
+        <div>${category}</div>
+        <div class="price">₪${price}</div>
+      </div>
+    `;
+
+    card.onclick = () => openProduct(category, price, img);
+    grid.appendChild(card);
+  }
+}
+
+function openProduct(name, price, img) {
+  const modal = document.getElementById("modal");
+  const content = document.getElementById("modal-content");
+
+  content.innerHTML = `
+    <img src="${img}">
+    <h2>${name}</h2>
+    <p>תכשיט איכותי בעיצוב מודרני</p>
+    <div class="price">₪${price}</div>
+    <button class="add-btn" onclick="addToCart('${name}', ${price})">הוסף לסל</button>
+  `;
+
+  modal.style.display = "flex";
+}
+
+function closeModal(e) {
+  if (e.target.id === "modal") {
+    document.getElementById("modal").style.display = "none";
+  }
+}
+
+function addToCart(name, price) {
+  cart.push({name, price});
+  saveCart();
+  alert("נוסף לסל");
+}
+
+updateCart();
+loadCategory("necklace");
+</script>
+
+</body>
+</html>
