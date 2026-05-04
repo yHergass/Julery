@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> חנות תכשיטים חדשה</title>
+<title>חנות תכשיטים</title>
 
 <style>
 body {
@@ -19,28 +19,32 @@ header {
   padding: 15px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .cart-btn {
   cursor: pointer;
   background: white;
   color: black;
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
 }
 
 .categories {
   display: flex;
-  justify-content: center;
   gap: 10px;
   padding: 15px;
   background: white;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-.categories button {
-  padding: 8px 15px;
+.categories button, .categories select {
+  padding: 8px 12px;
   border: none;
   cursor: pointer;
+  background: #eee;
+  border-radius: 6px;
 }
 
 .categories .active {
@@ -80,8 +84,10 @@ header {
 /* MODAL */
 .modal {
   position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
   background: rgba(0,0,0,0.6);
   display:none;
   justify-content:center;
@@ -129,60 +135,51 @@ header {
 <body>
 
 <header>
-  <div> חנות תכשיטים מקסימה</div>
+  <div>חנות תכשיטים</div>
   <div class="cart-btn" onclick="toggleCart()">🛒 (<span id="cart-count">0</span>)</div>
 </header>
 
 <div class="categories">
+  <button class="active" onclick="loadCategory('all', this)">הצג הכל</button>
   <button onclick="loadCategory('necklace', this)">שרשראות</button>
   <button onclick="loadCategory('bracelet', this)">צמידים</button>
   <button onclick="loadCategory('watch', this)">שעונים</button>
   <button onclick="loadCategory('earrings', this)">עגילים</button>
+
+  <select onchange="sortProducts(this.value)">
+    <option value="">מיון</option>
+    <option value="low">מחיר: נמוך לגבוה</option>
+    <option value="high">מחיר: גבוה לנמוך</option>
+    <option value="type">לפי סוג</option>
+  </select>
 </div>
 
 <div class="grid" id="grid"></div>
 
-<!-- MODAL -->
 <div class="modal" id="modal" onclick="closeModal(event)">
   <div class="modal-box" id="modal-box"></div>
 </div>
 
-<!-- CART -->
 <div class="cart" id="cart"></div>
 
 <script>
 
-/* נתוני מוצרים */
-const products = {
-  necklace: [
-    {name:"שרשרת זהב", price:250, img:"images/necklace1.jpg"},
-    {name:"שרשרת כסף", price:180, img:"images/necklace2.jpg"}
-  ],
-  bracelet: [
-    {name:"צמיד עור", price:120, img:"images/bracelet1.jpg"}
-  ],
-  watch: [
-    {name:"שעון יוקרתי", price:400, img:"images/watch1.jpg"}
-  ],
-  earrings: [
-    {name:"עגילי יהלום", price:300, img:"images/earring1.jpg"}
-  ]
-};
+const products = [
+  {name:"שרשרת זהב", price:250, img:"images/necklace1.jpg", category:"necklace"},
+  {name:"שרשרת כסף", price:180, img:"images/necklace2.jpg", category:"necklace"},
+  {name:"צמיד עור", price:120, img:"images/bracelet1.jpg", category:"bracelet"},
+  {name:"שעון יוקרתי", price:400, img:"images/watch1.jpg", category:"watch"},
+  {name:"עגילי יהלום", price:300, img:"images/earrings1.jpg", category:"earrings"}
+];
 
-/* סל קניות */
+let currentProducts = [...products];
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-/* טעינת קטגוריה */
-function loadCategory(category, btn) {
+function render(list) {
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  document.querySelectorAll(".categories button")
-    .forEach(b => b.classList.remove("active"));
-
-  if (btn) btn.classList.add("active");
-
-  products[category].forEach(item => {
+  list.forEach(item => {
     const card = document.createElement("div");
     card.className = "card";
 
@@ -199,7 +196,31 @@ function loadCategory(category, btn) {
   });
 }
 
-/* פתיחת מוצר */
+function loadCategory(category, btn) {
+  document.querySelectorAll(".categories button")
+    .forEach(b => b.classList.remove("active"));
+
+  if (btn) btn.classList.add("active");
+
+  if (category === "all") {
+    currentProducts = [...products];
+  } else {
+    currentProducts = products.filter(p => p.category === category);
+  }
+
+  render(currentProducts);
+}
+
+function sortProducts(type) {
+  let sorted = [...currentProducts];
+
+  if (type === "low") sorted.sort((a,b) => a.price - b.price);
+  if (type === "high") sorted.sort((a,b) => b.price - a.price);
+  if (type === "type") sorted.sort((a,b) => a.category.localeCompare(b.category));
+
+  render(sorted);
+}
+
 function openProduct(item) {
   const modal = document.getElementById("modal");
   const box = document.getElementById("modal-box");
@@ -207,7 +228,7 @@ function openProduct(item) {
   box.innerHTML = `
     <img src="${item.img}">
     <h2>${item.name}</h2>
-    <p>תכשיט איכותי בעיצוב מודרני</p>
+    <p>תכשיט איכותי בעיצוב יוקרתי</p>
     <div class="price">₪${item.price}</div>
     <button class="add-btn" onclick="addToCart('${item.name}', ${item.price})">הוסף לסל</button>
   `;
@@ -215,22 +236,18 @@ function openProduct(item) {
   modal.style.display = "flex";
 }
 
-/* סגירת מודאל */
 function closeModal(e) {
   if (e.target.id === "modal") {
     document.getElementById("modal").style.display = "none";
   }
 }
 
-/* הוספה לסל */
 function addToCart(name, price) {
   cart.push({name, price});
   localStorage.setItem("cart", JSON.stringify(cart));
   updateCart();
-  alert("נוסף לסל");
 }
 
-/* עדכון סל */
 function updateCart() {
   document.getElementById("cart-count").innerText = cart.length;
 
@@ -238,21 +255,17 @@ function updateCart() {
   cartDiv.innerHTML = "<h3>סל קניות</h3>";
 
   cart.forEach(item => {
-    cartDiv.innerHTML += `
-      <div>${item.name} - ₪${item.price}</div>
-    `;
+    cartDiv.innerHTML += `<div>${item.name} - ₪${item.price}</div>`;
   });
 }
 
-/* פתיחה/סגירה סל */
 function toggleCart() {
   const c = document.getElementById("cart");
   c.style.display = c.style.display === "block" ? "none" : "block";
 }
 
-/* אתחול */
 updateCart();
-loadCategory("necklace");
+loadCategory("all");
 
 </script>
 
