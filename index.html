@@ -16,17 +16,16 @@ body {
 header {
   background: #111;
   color: white;
-  padding: 15px 20px;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .cart-btn {
   cursor: pointer;
-  background: #fff;
-  color: #111;
-  padding: 6px 12px;
+  background: white;
+  color: black;
+  padding: 5px 10px;
   border-radius: 20px;
 }
 
@@ -39,13 +38,12 @@ header {
 }
 
 .categories button {
-  padding: 8px 16px;
+  padding: 8px 15px;
   border: none;
-  border-radius: 20px;
   cursor: pointer;
 }
 
-.categories button.active {
+.categories .active {
   background: black;
   color: white;
 }
@@ -59,14 +57,9 @@ header {
 
 .card {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  transition: 0.3s;
-}
-
-.card:hover {
-  transform: scale(1.03);
 }
 
 .card img {
@@ -87,31 +80,30 @@ header {
 /* MODAL */
 .modal {
   position: fixed;
-  top:0;left:0;
-  width:100%;height:100%;
+  top:0; left:0;
+  width:100%; height:100%;
   background: rgba(0,0,0,0.6);
   display:none;
   justify-content:center;
   align-items:center;
 }
 
-.modal-content {
+.modal-box {
   background:white;
   padding:20px;
   border-radius:10px;
-  max-width:400px;
   width:90%;
+  max-width:400px;
 }
 
-.modal img {
+.modal-box img {
   width:100%;
-  border-radius:10px;
 }
 
 .add-btn {
   margin-top:10px;
-  padding:10px;
   width:100%;
+  padding:10px;
   background:black;
   color:white;
   border:none;
@@ -126,25 +118,19 @@ header {
   width:300px;
   height:100%;
   background:white;
-  box-shadow:-2px 0 10px rgba(0,0,0,0.2);
   padding:15px;
   display:none;
   overflow:auto;
 }
-
-.cart-item {
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:10px;
-}
 </style>
+
 </head>
 
 <body>
 
 <header>
-  <div>קטלוג תכשיטים</div>
-  <div class="cart-btn" onclick="toggleCart()">🛒 סל (<span id="cart-count">0</span>)</div>
+  <div>חנות תכשיטים</div>
+  <div class="cart-btn" onclick="toggleCart()">🛒 (<span id="cart-count">0</span>)</div>
 </header>
 
 <div class="categories">
@@ -158,102 +144,116 @@ header {
 
 <!-- MODAL -->
 <div class="modal" id="modal" onclick="closeModal(event)">
-  <div class="modal-content" id="modal-content"></div>
+  <div class="modal-box" id="modal-box"></div>
 </div>
 
 <!-- CART -->
 <div class="cart" id="cart"></div>
 
 <script>
+
+/* נתוני מוצרים */
+const products = {
+  necklace: [
+    {name:"שרשרת זהב", price:250, img:"images/necklace1.jpg"},
+    {name:"שרשרת כסף", price:180, img:"images/necklace2.jpg"}
+  ],
+  bracelet: [
+    {name:"צמיד עור", price:120, img:"images/bracelet1.jpg"}
+  ],
+  watch: [
+    {name:"שעון יוקרתי", price:400, img:"images/watch1.jpg"}
+  ],
+  earrings: [
+    {name:"עגילי יהלום", price:300, img:"images/earrings1.jpg"}
+  ]
+};
+
+/* סל קניות */
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-function saveCart() {
-  localStorage.setItem("cart", JSON.stringify(cart));
-  updateCart();
-}
-
-function updateCart() {
-  document.getElementById("cart-count").innerText = cart.length;
-  const cartDiv = document.getElementById("cart");
-  cartDiv.innerHTML = "<h3>סל קניות</h3>";
-
-  cart.forEach((item, index) => {
-    cartDiv.innerHTML += `
-      <div class="cart-item">
-        <span>${item.name}</span>
-        <span>₪${item.price}</span>
-      </div>
-    `;
-  });
-}
-
-function toggleCart() {
-  const cartDiv = document.getElementById("cart");
-  cartDiv.style.display = cartDiv.style.display === "block" ? "none" : "block";
-}
-
-function randomPrice() {
-  return Math.floor(Math.random() * 400) + 100;
-}
-
+/* טעינת קטגוריה */
 function loadCategory(category, btn) {
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".categories button")
+    .forEach(b => b.classList.remove("active"));
+
   if (btn) btn.classList.add("active");
 
-  const count = Math.floor(Math.random() * 4) + 5;
-
-  for (let i = 0; i < count; i++) {
-    const price = randomPrice();
-    const img = `https://source.unsplash.com/400x400/?${category},jewelry&sig=${Math.random()}`;
-
+  products[category].forEach(item => {
     const card = document.createElement("div");
     card.className = "card";
 
     card.innerHTML = `
-      <img src="${img}">
+      <img src="${item.img}">
       <div class="card-content">
-        <div>${category}</div>
-        <div class="price">₪${price}</div>
+        <div>${item.name}</div>
+        <div class="price">₪${item.price}</div>
       </div>
     `;
 
-    card.onclick = () => openProduct(category, price, img);
+    card.onclick = () => openProduct(item);
     grid.appendChild(card);
-  }
+  });
 }
 
-function openProduct(name, price, img) {
+/* פתיחת מוצר */
+function openProduct(item) {
   const modal = document.getElementById("modal");
-  const content = document.getElementById("modal-content");
+  const box = document.getElementById("modal-box");
 
-  content.innerHTML = `
-    <img src="${img}">
-    <h2>${name}</h2>
+  box.innerHTML = `
+    <img src="${item.img}">
+    <h2>${item.name}</h2>
     <p>תכשיט איכותי בעיצוב מודרני</p>
-    <div class="price">₪${price}</div>
-    <button class="add-btn" onclick="addToCart('${name}', ${price})">הוסף לסל</button>
+    <div class="price">₪${item.price}</div>
+    <button class="add-btn" onclick="addToCart('${item.name}', ${item.price})">הוסף לסל</button>
   `;
 
   modal.style.display = "flex";
 }
 
+/* סגירת מודאל */
 function closeModal(e) {
   if (e.target.id === "modal") {
     document.getElementById("modal").style.display = "none";
   }
 }
 
+/* הוספה לסל */
 function addToCart(name, price) {
   cart.push({name, price});
-  saveCart();
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCart();
   alert("נוסף לסל");
 }
 
+/* עדכון סל */
+function updateCart() {
+  document.getElementById("cart-count").innerText = cart.length;
+
+  const cartDiv = document.getElementById("cart");
+  cartDiv.innerHTML = "<h3>סל קניות</h3>";
+
+  cart.forEach(item => {
+    cartDiv.innerHTML += `
+      <div>${item.name} - ₪${item.price}</div>
+    `;
+  });
+}
+
+/* פתיחה/סגירה סל */
+function toggleCart() {
+  const c = document.getElementById("cart");
+  c.style.display = c.style.display === "block" ? "none" : "block";
+}
+
+/* אתחול */
 updateCart();
 loadCategory("necklace");
+
 </script>
 
 </body>
